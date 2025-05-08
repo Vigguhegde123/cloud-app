@@ -1,17 +1,17 @@
 import heapq
 
 class Passenger:
-    def _init_(self, name, pid, age, priority=0):
+    def __init__(self, name, pid, age, priority=0):
         self.name = name
         self.id = pid
         self.age = age
         self.priority = priority
 
-    def _str_(self):
+    def __str__(self):
         return f"{self.name} (ID: {self.id}, Age: {self.age})"
 
 class TrainReservationSystem:
-    def _init_(self, max_seats=3):
+    def __init__(self, max_seats=3):
         self.max_seats = max_seats
         self.confirmed = []  # List of Passenger
         self.waiting_list = []  # Priority queue
