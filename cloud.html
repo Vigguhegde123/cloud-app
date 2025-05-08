@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Train Reservation System</title>
+  <style>
+    body {
+      background: linear-gradient(120deg, #89f7fe, #66a6ff);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      color: #333;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      color: #fff;
+    }
+    .container {
+      max-width: 700px;
+      margin: auto;
+      background: #fff;
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    }
+    label {
+      font-weight: bold;
+    }
+    input, select {
+      width: 100%;
+      padding: 10px;
+      margin: 8px 0 15px 0;
+      border: none;
+      background: #f1f1f1;
+      border-radius: 8px;
+    }
+    button {
+      background-color: #4CAF50;
+      color: white;
+      padding: 12px 20px;
+      margin: 10px 5px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background 0.3s;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    .lists {
+      display: none;
+      margin-top: 20px;
+    }
+    .confirmed, .waiting {
+      background: #e3f2fd;
+      padding: 15px;
+      margin-top: 10px;
+      border-radius: 10px;
+    }
+    .confirmed h3, .waiting h3 {
+      margin-top: 0;
+      color: #0d47a1;
+    }
+  </style>
+</head>
+<body>
+  <h1>Train Reservation System</h1>
+  <div class="container">
+    <label for="id">Passenger ID:</label>
+    <input type="number" id="id">
+
+    <label for="name">Name:</label>
+    <input type="text" id="name">
+
+    <label for="age">Age:</label>
+    <input type="number" id="age">
+
+    <label for="type">Quota Type:</label>
+    <select id="type">
+      <option value="V">VIP</option>
+      <option value="G">General</option>
+      <option value="S">Senior Citizen</option>
+      <option value="M">Military</option>
+      <option value="L">Ladies</option>
+      <option value="D">Disabled</option>
+      <option value="T">Tatkal</option>
+    </select>
+
+    <button onclick="bookTicket()">Book Ticket</button>
+    <button onclick="cancelTicket()">Cancel Ticket</button>
+    <button onclick="toggleLists()">Show/Hide Lists</button>
+
+    <div class="lists" id="lists">
+      <div class="confirmed">
+        <h3>Confirmed Passengers</h3>
+        <ul id="confirmedList"></ul>
+      </div>
+      <div class="waiting">
+        <h3>Waiting List</h3>
+        <ul id="waitingList"></ul>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const MAX_CONFIRMED = 3;
+    const MAX_WAITLIST = 10;
+
+    let confirmed = [];
+    let waitlist = [];
+
+    function getPriority(age, type) {
+      switch(type) {
+        case "V": return 1;
+        case "G": return 2;
+        case "S": return 3;
+        case "M": return 4;
+        case "L": return 5;
+        case "D": return 6;
+        case "T": return 7;
+        default: return 8;
+      }
+    }
+
+    function bookTicket() {
+      const id = parseInt(document.getElementById("id").value);
+      const name = document.getElementById("name").value;
+      const age = parseInt(document.getElementById("age").value);
+      const type = document.getElementById("type").value;
+      const priority = getPriority(age, type);
+      const timestamp = Date.now();
+
+      if (!id || !name || !age) {
+        alert("Please fill all fields!");
+        return;
+      }
+
+      const passenger = { id, name, age, type, priority, timestamp };
+
+      if (confirmed.length < MAX_CONFIRMED) {
+        passenger.seatNumber = confirmed.length + 1;
+        passenger.coach = "Sleeper Coach 1";
+        confirmed.push(passenger);
+        alert(Ticket confirmed for ${name}.\nSeat: ${passenger.seatNumber}, ${passenger.coach});
+      } else if (waitlist.length < MAX_WAITLIST) {
+        waitlist.push(passenger);
+        waitlist.sort((a, b) => {
+          if (a.priority !== b.priority) return a.priority - b.priority;
+          return a.timestamp - b.timestamp;
+        });
+        alert(${name} added to Waiting List ${waitlist.indexOf(passenger) + 1});
+      } else {
+        alert("Waiting list full!");
+      }
+
+      displayLists();
+      clearInputs();
+    }
+
+    function cancelTicket() {
+      const id = parseInt(prompt("Enter Passenger ID to cancel:"));
+      const index = confirmed.findIndex(p => p.id === id);
+
+      if (index !== -1) {
+        const removed = confirmed.splice(index, 1)[0];
+        confirmed.forEach((p, i) => p.seatNumber = i + 1);
+
+        if (waitlist.length > 0) {
+          const promoted = waitlist.shift();
+          promoted.seatNumber = confirmed.length + 1;
+          promoted.coach = "Sleeper Coach 1";
+          confirmed.push(promoted);
+          alert(Cancelled ticket of ${removed.name}. ${promoted.name} promoted to confirmed list.);
+        } else {
+          alert(Cancelled ticket of ${removed.name}.);
+        }
+      } else {
+        alert("Passenger ID not found in confirmed list.");
+      }
+
+      displayLists();
+      clearInputs();
+    }
+
+    function displayLists() {
+      const confirmedList = document.getElementById("confirmedList");
+      const waitingList = document.getElementById("waitingList");
+      confirmedList.innerHTML = "";
+      waitingList.innerHTML = "";
+
+      confirmed.forEach(p => {
+        const li = document.createElement("li");
+        li.textContent = ${p.name} (ID: ${p.id}) - Seat ${p.seatNumber}, ${p.coach};
+        confirmedList.appendChild(li);
+      });
+
+      waitlist.forEach((p, i) => {
+        const li = document.createElement("li");
+        li.textContent = Waiting List ${i + 1}: ${p.name} (ID: ${p.id});
+        waitingList.appendChild(li);
+      });
+    }
+
+    function toggleLists() {
+      const lists = document.getElementById("lists");
+      lists.style.display = lists.style.display === "none" ? "block" : "none";
+    }
+
+    function clearInputs() {
+      document.getElementById("id").value = '';
+      document.getElementById("name").value = '';
+      document.getElementById("age").value = '';
+      document.getElementById("type").value = 'V';
+      document.getElementById("id").focus();
+    }
+
+    document.getElementById("lists").style.display = "none";
+  </script>
+</body>
+</html>
