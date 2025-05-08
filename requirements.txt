@@ -1,1 +1,2 @@
-# No external dependencies required. Uses only built-in Python modules.
+Flask
+gunicorn
