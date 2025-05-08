@@ -1,128 +1,77 @@
-import time
+import heapq
 
-MAX_CONFIRMED = 3
-MAX_WAITLIST = 10
+class Passenger:
+    def _init_(self, name, pid, age, priority=0):
+        self.name = name
+        self.id = pid
+        self.age = age
+        self.priority = priority
 
-confirmed = []
-waitlist = []
+    def _str_(self):
+        return f"{self.name} (ID: {self.id}, Age: {self.age})"
 
-def get_priority(age, quota_type):
-    priorities = {
-        "V": 1,  # VIP
-        "G": 2,  # General
-        "S": 3,  # Senior Citizen
-        "M": 4,  # Military
-        "L": 5,  # Ladies
-        "D": 6,  # Disabled
-        "T": 7   # Tatkal
-    }
-    return priorities.get(quota_type.upper(), 8)
+class TrainReservationSystem:
+    def _init_(self, max_seats=3):
+        self.max_seats = max_seats
+        self.confirmed = []  # List of Passenger
+        self.waiting_list = []  # Priority queue
+        self.counter = 0
 
-def book_ticket():
-    try:
-        id = int(input("Enter Passenger ID: "))
-        if any(p['id'] == id for p in confirmed + waitlist):
-            print("Passenger ID already exists!")
-            return
-
-        name = input("Enter Name: ").strip()
-        if not name:
-            print("Name cannot be empty.")
-            return
-
-        age = int(input("Enter Age: "))
-        quota_type = input("Enter Quota Type (V/G/S/M/L/D/T): ").upper()
-        if quota_type not in "VGSMTLD":
-            print("Invalid quota type.")
-            return
-
-        timestamp = time.time()
-        priority = get_priority(age, quota_type)
-
-        passenger = {
-            "id": id,
-            "name": name,
-            "age": age,
-            "type": quota_type,
-            "priority": priority,
-            "timestamp": timestamp
-        }
-
-        if len(confirmed) < MAX_CONFIRMED:
-            passenger["seatNumber"] = len(confirmed) + 1
-            passenger["coach"] = "Sleeper Coach 1"
-            confirmed.append(passenger)
-            print(f"Ticket confirmed for {name}. Seat: {passenger['seatNumber']}, {passenger['coach']}")
-        elif len(waitlist) < MAX_WAITLIST:
-            waitlist.append(passenger)
-            waitlist.sort(key=lambda p: (p['priority'], p['timestamp']))
-            position = waitlist.index(passenger) + 1
-            print(f"{name} added to Waiting List {position}")
+    def reserve(self, passenger):
+        if len(self.confirmed) < self.max_seats:
+            self.confirmed.append(passenger)
+            print(f"{passenger} has been confirmed.")
         else:
-            print("Waiting list full!")
+            heapq.heappush(self.waiting_list, (-passenger.priority, self.counter, passenger))
+            self.counter += 1
+            print(f"{passenger} has been added to the waiting list.")
 
-    except ValueError:
-        print("Invalid input. Please enter correct data.")
+    def cancel(self, pid):
+        for i, passenger in enumerate(self.confirmed):
+            if passenger.id == pid:
+                removed = self.confirmed.pop(i)
+                print(f"Cancelled reservation for {removed}.")
+                if self.waiting_list:
+                    _, _, next_passenger = heapq.heappop(self.waiting_list)
+                    self.confirmed.append(next_passenger)
+                    print(f"{next_passenger} has been moved from waiting list to confirmed.")
+                return
+        print(f"No confirmed passenger found with ID: {pid}")
 
-def cancel_ticket():
-    try:
-        id = int(input("Enter Passenger ID to cancel: "))
-        index = next((i for i, p in enumerate(confirmed) if p['id'] == id), -1)
+    def show_status(self):
+        print("\nConfirmed Passengers:")
+        for p in self.confirmed:
+            print(f"  - {p}")
+        print("Waiting List:")
+        for _, _, p in self.waiting_list:
+            print(f"  - {p}")
+        print()
 
-        if index != -1:
-            removed = confirmed.pop(index)
-            for i, p in enumerate(confirmed):
-                p['seatNumber'] = i + 1
+# Main loop
+system = TrainReservationSystem()
 
-            if waitlist:
-                promoted = waitlist.pop(0)
-                promoted['seatNumber'] = len(confirmed) + 1
-                promoted['coach'] = "Sleeper Coach 1"
-                confirmed.append(promoted)
-                print(f"Cancelled ticket of {removed['name']}. {promoted['name']} promoted to confirmed list.")
-            else:
-                print(f"Cancelled ticket of {removed['name']}.")
-        else:
-            print("Passenger ID not found in confirmed list.")
-    except ValueError:
-        print("Invalid ID entered.")
+while True:
+    print("\n1. Reserve Seat\n2. Cancel Reservation\n3. Show Status\n4. Exit")
+    choice = input("Enter your choice: ")
 
-def display_lists():
-    print("\n--- Confirmed Passengers ---")
-    if not confirmed:
-        print("No confirmed bookings.")
+    if choice == '1':
+        name = input("Enter passenger name: ")
+        pid = input("Enter passenger ID: ")
+        age = int(input("Enter passenger age: "))
+        priority = int(input("Enter priority (higher means more urgent): "))
+        passenger = Passenger(name, pid, age, priority)
+        system.reserve(passenger)
+
+    elif choice == '2':
+        pid = input("Enter passenger ID to cancel: ")
+        system.cancel(pid)
+
+    elif choice == '3':
+        system.show_status()
+
+    elif choice == '4':
+        print("Exiting system.")
+        break
+
     else:
-        for p in confirmed:
-            print(f"{p['name']} (ID: {p['id']}) - Seat {p['seatNumber']}, {p['coach']}")
-
-    print("\n--- Waiting List ---")
-    if not waitlist:
-        print("No passengers in waiting list.")
-    else:
-        for i, p in enumerate(waitlist, 1):
-            print(f"Waiting List {i}: {p['name']} (ID: {p['id']})")
-
-def main_menu():
-    while True:
-        print("\n==== Train Reservation System ====")
-        print("1. Book Ticket")
-        print("2. Cancel Ticket")
-        print("3. Show Passenger Lists")
-        print("4. Exit")
-
-        choice = input("Choose an option: ")
-
-        if choice == "1":
-            book_ticket()
-        elif choice == "2":
-            cancel_ticket()
-        elif choice == "3":
-            display_lists()
-        elif choice == "4":
-            print("Exiting system. Goodbye!")
-            break
-        else:
-            print("Invalid choice. Please try again.")
-
-if __name__ == "_main_":
-    main_menu()
+        print("Invalid choice. Try again.")
